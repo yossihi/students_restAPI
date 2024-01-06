@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Student CRUD</title>
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+        .card {
+            margin-bottom: 20px;
+            height: 300px;
+        }
+        .card-img-top {
+            width: 100%;
+            height: 50%;
+            object-fit: cover;
+        }
+        .scroll-list {
+            max-height: 500px;
+            overflow-y: auto;
+        }
+        header, footer {
+            background-color: #343a40;
+            color: white;
+            text-align: center;
+            padding: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h3 class="display-4">Student CRUD Application</h3>
+    </header>
+    <div class="container mt-4">
+        <form id="studentForm">
+            <div class="form-row">
+                <div class="form-group col-md-4">
+                    <input type="text" id="name" placeholder="Name" class="form-control">
+                </div>
+                <div class="form-group col-md-4">
+                    <input type="text" id="city" placeholder="City" class="form-control">
+                </div>
+                <div class="form-group col-md-4">
+                    <input type="text" id="address" placeholder="Address" class="form-control">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group col-md-8">
+                    <input type="file" id="photo" class="form-control">
+                </div>
+                <div class="form-group col-md-4">
+                    <button id="addStudent" class="btn btn-primary btn-block">Add Student</button>
+                </div>
+            </div>
+        </form>
+
+        <div id="message" class="alert alert-dismissible fade show message" role="alert" style="display: none;">
+            <!-- Message will be displayed here -->
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+            </button>
+        </div>
+
+        <div class="row scroll-list" id="studentCards">
+            <!-- Student cards will be displayed here -->
+        </div>
+    </div>
+    <footer class="fixed-bottom">
+        <p>Student CRUD App - © 2024</p>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.10.2/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+
+    <script>
+        // Fetch and display students on page load
+        MY_SERVER = "http://127.0.0.1:5000"
+
+        window.onload = function () {
+            fetchStudents();
+        };
+
+        // Function to create smaller student cards
+        function createStudentCard(student) {
+            const cardColumn = document.createElement('div');
+            cardColumn.classList.add('col-md-6', 'mb-3');
+
+            const card = document.createElement('div');
+            card.classList.add('card');
+
+            const img = document.createElement('img');
+            img.classList.add('card-img-top');
+            img.src = `../backend/${student.photo}`;
+            img.alt = 'Student Image';
+
+            const cardBody = document.createElement('div');
+            cardBody.classList.add('card-body', 'd-flex', 'flex-column');
+
+            const title = document.createElement('h6');
+            title.classList.add('card-title');
+            title.textContent = student.name;
+
+            const city = document.createElement('p');
+            city.classList.add('card-text');
+            city.textContent = `City: ${student.city}`;
+
+            const address = document.createElement('p');
+            address.classList.add('card-text');
+            address.textContent = `Address: ${student.addres}`;
+
+            cardBody.appendChild(title);
+            cardBody.appendChild(city);
+            cardBody.appendChild(address);
+
+            card.appendChild(img);
+            card.appendChild(cardBody);
+
+            cardColumn.appendChild(card);
+
+            return cardColumn;
+        }
+
+        // Updated fetchStudents function to render cards
+        function fetchStudents() {
+            axios.get(MY_SERVER)
+                .then(function (response) {
+                    const students = response.data;
+                    const studentCards = document.getElementById('studentCards');
+                    studentCards.innerHTML = ''; // Clear previous cards
+
+                    students.forEach(function (student) {
+                        const card = createStudentCard(student);
+                        studentCards.appendChild(card);
+                    });
+                })
+                .catch(function (error) {
+                    console.log(error);
+                });
+        }
+
+        // Function to add a new student
+        const add_stud = (event) => {
+            event.preventDefault()
+            const name = document.getElementById('name').value;
+            const city = document.getElementById('city').value;
+            const addres = document.getElementById('address').value;
+            const photo = document.getElementById('photo');
+            console.log(photo);
+
+            const formData = new FormData()
+            formData.append('name', name)
+            formData.append('city', city)
+            formData.append('addres', addres)
+            formData.append('image', photo.files[0])
+
+            axios.post('http://localhost:5000/add', formData)
+                .then(function (response) {
+                    showMessage('success', response.data.msg, event);
+                    fetchStudents(); // Refresh student table
+                })
+                .catch(function (response) {
+                    showMessage('success', response.data.msg, event);
+                });
+        };
+
+        document.getElementById("studentForm").addEventListener('submit', add_stud)
+
+        // Function to delete a student
+        function deleteStudent(studentId) {
+            axios.delete(`http://localhost:5000/delete/${studentId}`)
+                .then(function (response) {
+                    showMessage('success', response.data.msg, event);
+                    fetchStudents(); // Refresh student table
+                })
+                .catch(function (error) {
+                    console.log(error);
+                });
+        }
+
+        // Function to edit a student
+        function editStudent(studentId) {
+            const name = document.getElementById('name').value;
+            const city = document.getElementById('city').value;
+            const addres = document.getElementById('address').value;
+            const photo = document.getElementById('photo');
+
+            const formData = new FormData()
+            formData.append('name', name)
+            formData.append('city', city)
+            formData.append('addres', addres)
+            formData.append('image', photo.files[0])
+
+
+            axios.post(`${MY_SERVER}/update/${studentId}`, formData)
+                .then(function (response) {
+                    showMessage('success', response.data.msg, event);
+                    fetchStudents(); // Refresh student table
+                })
+                .catch(function (error) {
+                    showMessage('success', response.data.msg, event);
+                });
+        }
+
+        // Function to show messages in a div
+        function showMessage(type, message, event) {
+            event.preventDefault()
+            const messageDiv = document.getElementById('message');
+            messageDiv.textContent = message;
+            messageDiv.className = `message ${type}`;
+            messageDiv.style.display = 'block';
+
+            // Hide message after 5 seconds
+            setTimeout(function () {
+                messageDiv.style.display = 'none';
+            }, 5000);
+            clear_form()
+        }
+
+        const clear_form = () => {
+            document.getElementById("name").value = ""
+            document.getElementById("city").value = ""
+            document.getElementById("address").value = ""
+        }
+    </script>
+</body>
+
+</html>
